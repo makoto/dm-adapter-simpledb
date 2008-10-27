@@ -14,7 +14,7 @@ module DataMapper
           item_name  = item_name_for_resource(resource)
           sdb_type = simpledb_type(resource.model)
           attributes = resource.attributes.merge(:simpledb_type => sdb_type)
-          sdb.put_attributes(domain, item_name, attributes)
+          sdb.put_attributes(item_name,  Amazon::SDB::Multimap.new(attributes))
           created += 1
         end
         created
@@ -141,11 +141,15 @@ module DataMapper
       
       # Returns an SimpleDB instance to work with
       def sdb
-        @sdb ||= AwsSdb::Service.new(
-          :access_key_id => @uri[:access_key], 
-          :secret_access_key => @uri[:secret_key],
-          :url => @uri[:url]
-        )
+        # @sdb ||= AwsSdb::Service.new(
+        #   :access_key_id => @uri[:access_key], 
+        #   :secret_access_key => @uri[:secret_key],
+        #   :url => @uri[:url]
+        # )
+        
+        # NOTE: 
+        # BASE_PATH is set at spec_helper.rb
+        @sdb ||= Amazon::SDB::Base.new( @uri[:access_key], @uri[:secret_key]).domain(@uri[:domain])
         @sdb
       end
       

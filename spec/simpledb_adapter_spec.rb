@@ -3,8 +3,9 @@ require Pathname(__FILE__).dirname.expand_path + 'spec_helper'
 
 describe DataMapper::Adapters::SimpleDBAdapter do
   before(:each) do
-    @person_attrs = { :id => "person-#{Time.now.to_f.to_s}", :name => 'Jeremy Boles', :age  => 25, 
-                      :wealth => 25.00, :birthday => Date.today }
+    # Note converted everything to string for now.
+    @person_attrs = { :id => "person-#{Time.now.to_f.to_s}", :name => 'Jeremy Boles', :age  => "25", 
+                      :wealth => "25.00", :birthday => "Date.today" }
     @person = Person.new(@person_attrs)
   end
   
@@ -100,7 +101,6 @@ describe DataMapper::Adapters::SimpleDBAdapter do
     end
     
     it 'should handle DateTime' do
-      pending 'Need to figure out how to coerce DateTime'
       time = Time.now
       @jeremy.created_at = time
       @jeremy.save

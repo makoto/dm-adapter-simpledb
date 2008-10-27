@@ -6,6 +6,7 @@ require 'rubygems'
 require 'simplerdb/server'
 
 require 'aws_sdb'
+require 'amazon_sdb'
 
 require 'pathname'
 require Pathname(__FILE__).dirname.parent.expand_path + 'lib/simpledb_adapter'
@@ -20,6 +21,8 @@ port = 8087
   @thread = Thread.new { @server.start }
 end
 
+
+
 DataMapper.setup(:default, {
   :adapter => 'simpledb',
   :access_key => access_key,
@@ -31,21 +34,32 @@ DataMapper.setup(:default, {
 uri = DataMapper.repository.adapter.uri
 
 # Creating domain for each test
-AwsSdb::Service.new(
-  :access_key_id => uri[:access_key],
-  :secret_access_key => uri[:secret_key],
-  :url => uri[:url]
-).create_domain(uri[:domain])
+
+# AwsSdb::Service.new(
+#   :access_key_id => uri[:access_key],
+#   :secret_access_key => uri[:secret_key],
+#   :url => uri[:url]
+# ).create_domain(uri[:domain])
+
+# amazon_sdb does not allow you to set url as config, hence needs to modify constant ;-(
+Amazon::SDB::Base::BASE_PATH = uri[:url]
+Amazon::SDB::Base.new(uri[:access_key], uri[:secret_key]).create_domain(uri[:domain])
 
 class Person
   include DataMapper::Resource
   
+  # Note converted everything to string for now.
   property :id,         String, :key => true
   property :name,       String, :key => true
-  property :age,        Integer
-  property :wealth,     Float
-  property :birthday,   Date
-  property :created_at, DateTime
+  property :age,        String
+  property :wealth,     String
+  property :birthday,   String
+  property :created_at, String
+  
+  # property :age,        Integer
+  # property :wealth,     Float
+  # property :birthday,   Date
+  # property :created_at, DateTime
   
   belongs_to :company
 end

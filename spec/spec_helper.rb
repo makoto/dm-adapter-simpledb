@@ -10,8 +10,8 @@ require 'aws_sdb'
 require 'pathname'
 require Pathname(__FILE__).dirname.parent.expand_path + 'lib/simpledb_adapter'
 
-access_key = ENV['AMAZON_ACCESS_KEY_ID']
-secret_key = ENV['AMAZON_SECRET_ACCESS_KEY']
+access_key = ENV['AMAZON_ACCESS_KEY_ID'] || raise("Error:Setup AMAZON_ACCESS_KEY_ID at your environment variable")
+secret_key = ENV['AMAZON_SECRET_ACCESS_KEY'] || raise("Error:Setup AMAZON_SECRET_ACCESS_KEY at your environment variable")
 
 # Start up in memory simplerdb for testing. Port can be anything
 port = 8087

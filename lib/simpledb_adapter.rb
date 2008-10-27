@@ -48,8 +48,11 @@ module DataMapper
           end
         end
         
-        results = sdb.query(domain, conditions.compact.join(' intersection '))
-        results = results[0].map {|d| sdb.get_attributes(domain, d) }
+        results = sdb.query(conditions.compact.join(' intersection '))
+        # Amazon::SDB::ResultSet contains items. No need to get each attribute.
+        # http://nytimes.rubyforge.org/amazon_sdb/classes/Amazon/SDB/ResultSet.html
+        #
+        # results = results[0].map {|d| sdb.get_attributes(domain, d) }
         
         Collection.new(query) do |collection|
           results.each do |result|
@@ -88,7 +91,7 @@ module DataMapper
         updated = 0
         item_name = item_name_for_query(query)
         attributes = attributes.to_a.map {|a| [a.first.name.to_s, a.last]}.to_hash
-        sdb.put_attributes(domain, item_name, attributes, true)
+        sdb.put_attributes(item_name, Amazon::SDB::Multimap.new(attributes))
         updated += 1
         raise NotImplementedError.new('Only :eql on delete at the moment') if not_eql_query?(query)
         updated

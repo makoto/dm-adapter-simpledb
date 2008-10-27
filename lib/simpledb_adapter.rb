@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'dm-core'
 require 'aws_sdb'
+require 'amazon_sdb'
 require 'digest/sha1'
 
 module DataMapper
@@ -142,7 +143,8 @@ module DataMapper
       def sdb
         @sdb ||= AwsSdb::Service.new(
           :access_key_id => @uri[:access_key], 
-          :secret_access_key => @uri [:secret_key]
+          :secret_access_key => @uri[:secret_key],
+          :url => @uri[:url]
         )
         @sdb
       end

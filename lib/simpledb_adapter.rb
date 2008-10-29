@@ -71,20 +71,22 @@ module DataMapper
       
       def read_one(query)
         item_name = item_name_for_query(query)
-
-        data = sdb.get_attributes(item_name)       
-        unless data.empty?
-          data = query.fields.map do |property|
-            value = data[property.field.to_s]
-            if value.size > 1
-              value.map {|v| property.typecast(v) }
-            else
-              property.typecast(value[0])
-            end
+        begin
+          data = sdb.get_attributes(item_name)     
+          # Returning nil at get!(*key) will raise DataMapper::ObjectNotFoundError 
+          # at http://github.com/sam/dm-core/tree/master/lib/dm-core/model.rb#L248
+        rescue  Amazon::SDB::RecordNotFoundError
+          return nil
+        end  
+        data = query.fields.map do |property|
+          value = data[property.field.to_s]
+          if value.size > 1
+            value.map {|v| property.typecast(v) }
+          else
+            property.typecast(value[0])
           end
-          
-          query.model.load(data, query)
         end
+        query.model.load(data, query)
       end
 
       def update(attributes, query)

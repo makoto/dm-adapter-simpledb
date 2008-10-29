@@ -72,7 +72,7 @@ module DataMapper
       def read_one(query)
         item_name = item_name_for_query(query)
 
-        data = sdb.get_attributes(domain, item_name)       
+        data = sdb.get_attributes(item_name)       
         unless data.empty?
           data = query.fields.map do |property|
             value = data[property.field.to_s]

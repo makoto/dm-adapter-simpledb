@@ -43,7 +43,7 @@ describe DataMapper::Adapters::SimpleDBAdapter do
     end
      
     it 'should destroy a record' do
-      @person.destroy.should be_true
+      lambda{@person.destroy}.should change{Person.all.size}.by(-1)
     end
    
   end

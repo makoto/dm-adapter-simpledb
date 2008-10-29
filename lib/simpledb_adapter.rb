@@ -23,7 +23,7 @@ module DataMapper
       def delete(query)
         deleted = 0
         item_name = item_name_for_query(query)
-        sdb.delete_attributes(domain, item_name)
+        sdb.delete_attributes(item_name)
         deleted += 1
         raise NotImplementedError.new('Only :eql on delete at the moment') if not_eql_query?(query)
         deleted
@@ -49,22 +49,27 @@ module DataMapper
         end
         
         results = sdb.query(conditions.compact.join(' intersection '))
+          
         # Amazon::SDB::ResultSet contains items. No need to get each attribute.
         # http://nytimes.rubyforge.org/amazon_sdb/classes/Amazon/SDB/ResultSet.html
         #
         # results = results[0].map {|d| sdb.get_attributes(domain, d) }
         
         Collection.new(query) do |collection|
-          results.each do |result|
-            data = query.fields.map do |property|
-              value = result[property.field.to_s]
-              if value.size > 1
-                value.map {|v| property.typecast(v) }
-              else
-                property.typecast(value[0])
+          begin
+            results.each do |result|
+              data = query.fields.map do |property|
+                value = result[property.field.to_s]
+                if value.size > 1
+                  value.map {|v| property.typecast(v) }
+                else
+                  property.typecast(value[0])
+                end
               end
+              collection.load(data)
             end
-            collection.load(data)
+          rescue Amazon::SDB::RecordNotFoundError
+            nil
           end
         end
       end

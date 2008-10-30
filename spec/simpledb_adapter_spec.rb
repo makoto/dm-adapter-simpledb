@@ -2,27 +2,24 @@ require 'pathname'
 require Pathname(__FILE__).dirname.expand_path + 'spec_helper'
 
 describe DataMapper::Adapters::SimpleDBAdapter do
-  before(:each) do
-    # Note converted everything to string for now.
-    @person_attrs = { :id => "person-#{Time.now.to_f.to_s}", :name => 'Jeremy Boles', :age  => "25", 
-                      :wealth => "25.00", :birthday => "Date.today" }
-    @person = Person.new(@person_attrs)
-  end
-  
   it 'should create a record' do
+    @person = Person.new(person_attrs)      
     @person.save.should be_true
     @person.id.should_not be_nil
     @person.destroy
   end
   
   describe 'with a saved record' do
-    before(:each) { @person.save }
+    before(:each) { 
+      @person = Person.new(person_attrs)      
+      @person.save 
+    }
     after(:each)  { @person.destroy }
     
     it 'should get a record' do
       person = Person.get!(@person.id, @person.name)
       person.should_not be_nil
-      person.wealth.should == @person.wealth
+      person.should == @person
     end
      
     it 'should not get records of the wrong type by id' do
@@ -50,9 +47,9 @@ describe DataMapper::Adapters::SimpleDBAdapter do
    
   describe 'with multiple records saved' do
     before(:each) do
-      @jeremy   = Person.create(@person_attrs.merge(:id => Time.now.to_f.to_s, :name => "Jeremy Boles", :age => 25))
-      @danielle = Person.create(@person_attrs.merge(:id => Time.now.to_f.to_s, :name => "Danille Boles", :age => 26))
-      @keegan   = Person.create(@person_attrs.merge(:id => Time.now.to_f.to_s, :name => "Keegan Jones", :age => 20))
+      @jeremy   = Person.create(person_attrs.merge(:id => Time.now.to_f.to_s, :name => "Jeremy Boles", :age => 25))
+      @danielle = Person.create(person_attrs.merge(:id => Time.now.to_f.to_s, :name => "Danille Boles", :age => 26))
+      @keegan   = Person.create(person_attrs.merge(:id => Time.now.to_f.to_s, :name => "Keegan Jones", :age => 20))
     end
      
     after(:each) do
@@ -128,4 +125,12 @@ describe DataMapper::Adapters::SimpleDBAdapter do
      it 'should load descendents on parent.all' 
      it 'should raise an error if you have a column named couchdb_type'
    end
+   
+private 
+  def person_attrs
+    { 
+      :id => "person-#{Time.now.to_f.to_s}", :name => 'Jeremy Boles', :age  => "25", 
+      :wealth => "25.00", :birthday => "Date.today" 
+    }
+  end
 end

@@ -4,6 +4,27 @@ require 'aws_sdb'
 require 'amazon_sdb'
 require 'digest/sha1'
 
+# At default, amazon_sdb returns attribute as array, as you can store 
+# This will cause 'should update a record' spec fail, as person.age returns [25], instead of 25
+# I tried to get rid of array, but doing it using the below will break other matcher specs, so 
+# commented out for now.
+#
+# module DataMapper
+#   module Types
+#     class Integer < DataMapper::Type
+#       primitive String
+# 
+#       def self.load(value, property)
+#         value.first if (value.class == Array && value.size == 1)
+#       end
+#       
+#       def self.dump(value, property)
+#          value.to_i
+#       end
+#     end # class Integer
+#   end # module Types
+# end # module DataMapper
+
 module DataMapper
   module Adapters
     class SimpleDBAdapter < AbstractAdapter
@@ -44,17 +65,23 @@ module DataMapper
               when :lte then '<='
               else raise "Invalid query operator: #{operator.inspect}"
             end
-            "['#{condition[1].name.to_s}' #{operator} '#{condition[2].to_s}']"
+            
+            # Because simpledb does have only String type, number needs to be padded to fixed length.
+            # amazon_sdb will handle padding number when storing numeric, but won't help you quering.
+            # Hence, you have to convert by yourself.
+            # eg:
+            # ['simpledb_type' = 'people'] intersection ['age' = '00000000000000000000000000000025']
+            value = condition[2]
+            value = sprintf("%032d", value.to_s) if value.class == Fixnum
+            
+            "['#{condition[1].name.to_s}' #{operator} '#{value}']"
           end
         end
-        
-        results = sdb.query(conditions.compact.join(' intersection '))
-          
-        # Amazon::SDB::ResultSet contains items. No need to get each attribute.
+
+        # Amazon::SDB::ResultSet contains items if :load_attrs is set to true.
         # http://nytimes.rubyforge.org/amazon_sdb/classes/Amazon/SDB/ResultSet.html
-        #
-        # results = results[0].map {|d| sdb.get_attributes(domain, d) }
-        
+        results = sdb.query(:expr => conditions.compact.join(' intersection '), :load_attrs => true)
+          
         Collection.new(query) do |collection|
           begin
             results.each do |result|
@@ -98,12 +125,18 @@ module DataMapper
         updated = 0
         item_name = item_name_for_query(query)
         attributes = attributes.to_a.map {|a| [a.first.name.to_s, a.last]}.to_hash
+
+        #Delete old attribute before insert new one.
+        old_item = sdb.get_attributes(item_name)
+        old_attributes = old_item.attributes.to_h.reject{|k,v| !(attributes.keys.include?(k))}
+        sdb.delete_attributes(item_name, Amazon::SDB::Multimap.new(old_attributes))
+
         sdb.put_attributes(item_name, Amazon::SDB::Multimap.new(attributes))
         updated += 1
         raise NotImplementedError.new('Only :eql on delete at the moment') if not_eql_query?(query)
         updated
       end
-      
+            
     private
       
       # Returns the domain for the model

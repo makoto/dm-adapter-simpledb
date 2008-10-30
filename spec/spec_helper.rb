@@ -28,6 +28,7 @@ DataMapper.setup(:default, {
   :access_key => access_key,
   :secret_key => secret_key,
   :domain => 'missionaries',
+  # :url => "http://sdb.amazonaws.com"
   :url => "http://localhost:#{port}"
 })
 
@@ -43,7 +44,9 @@ uri = DataMapper.repository.adapter.uri
 
 # amazon_sdb does not allow you to set url as config, hence needs to modify constant ;-(
 Amazon::SDB::Base::BASE_PATH = uri[:url]
-Amazon::SDB::Base.new(uri[:access_key], uri[:secret_key]).create_domain(uri[:domain])
+sdb_base = Amazon::SDB::Base.new(uri[:access_key], uri[:secret_key])
+# sdb_base.delete_domain!(uri[:domain])
+sdb_base.create_domain(uri[:domain])
 
 class Person
   include DataMapper::Resource
@@ -51,10 +54,10 @@ class Person
   # Note converted everything to string for now.
   property :id,         String, :key => true
   property :name,       String, :key => true
-  property :age,        String
+  property :age,        Integer
   property :wealth,     String
-  property :birthday,   String
-  property :created_at, String
+  property :birthday,   Time
+  property :created_at, Time
   
   # property :age,        Integer
   # property :wealth,     Float
